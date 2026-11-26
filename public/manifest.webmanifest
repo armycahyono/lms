@@ -1,0 +1,9 @@
+{
+    "name": "LMS SMK PGRI Kras",
+    "short_name": "LMS PGRI",
+    "start_url": "/dashboard",
+    "display": "standalone",
+    "background_color": "#f6f8fb",
+    "theme_color": "#195b9e",
+    "orientation": "portrait-primary"
+}
