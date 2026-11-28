@@ -44,10 +44,6 @@ class AuthenticatedSessionController extends Controller
             'created_at' => now(),
         ]);
 
-        if ($request->user()->must_change_password) {
-            return redirect()->route('password.force-change');
-        }
-
         return redirect()->intended(route('dashboard'));
     }
 

@@ -30,6 +30,7 @@ class ProcessSiapWebhookJob implements ShouldQueue
                 'classroom.updated' => $this->handleClassroomUpdated(),
                 'assignment.updated' => $syncService->upsertTeachingAssignmentFromPayload($this->payload),
                 'academic_year.activated' => $this->handleAcademicYearActivated(),
+                'attendance.recorded', 'attendance.updated' => $syncService->upsertSchoolAttendanceFromPayload($this->payload),
                 default => null,
             };
 

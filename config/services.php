@@ -37,7 +37,13 @@ return [
 
     'siap' => [
         'url' => env('SIAP_BASE_URL', 'http://siap.test'),
+        'sso_url' => env('SIAP_SSO_URL'),
         'token' => env('INTEGRATION_API_TOKEN'),
+    ],
+
+    'cbt' => [
+        'url' => env('CBTPGRI_BASE_URL', 'http://cbtpgri.test'),
+        'token' => env('CBTPGRI_API_TOKEN'),
     ],
 
 ];

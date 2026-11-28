@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -23,6 +24,7 @@ use Laravel\Sanctum\HasApiTokens;
     'role',
     'must_change_password',
     'is_active',
+    'parent_notify_mode',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
@@ -65,6 +67,31 @@ class User extends Authenticatable
     public function studentClassHistories(): HasMany
     {
         return $this->hasMany(StudentClassHistory::class, 'student_user_id');
+    }
+
+    public function scopeForAcademicYear(Builder $query, ?AcademicYear $academicYear): Builder
+    {
+        if (! $academicYear) {
+            return $query;
+        }
+
+        if ($academicYear->is_active) {
+            $query->where('is_active', true);
+        }
+
+        return $query->where(function (Builder $sub) use ($academicYear): void {
+            $sub->whereHas('classrooms', function (Builder $cq) use ($academicYear): void {
+                $cq->where('classrooms.academic_year_id', $academicYear->id);
+                if ($academicYear->is_active) {
+                    $cq->where('classroom_students.status', 'active');
+                }
+            })->orWhereHas('studentClassHistories', function (Builder $hq) use ($academicYear): void {
+                $hq->where('academic_year_id', $academicYear->id);
+                if ($academicYear->is_active) {
+                    $hq->whereNull('left_at');
+                }
+            });
+        });
     }
 
     public function teachingCourses(): BelongsToMany
@@ -124,6 +151,60 @@ class User extends Authenticatable
     public function isSiswa(): bool
     {
         return $this->role === 'siswa';
+    }
+
+    public function isOrangTua(): bool
+    {
+        return in_array($this->role, ['orang_tua', 'wali_murid'], true);
+    }
+
+    public function children(): BelongsToMany
+    {
+        return $this->belongsToMany(self::class, 'parent_student', 'parent_user_id', 'student_user_id')
+            ->withPivot('relationship')
+            ->withTimestamps();
+    }
+
+    public function parents(): BelongsToMany
+    {
+        return $this->belongsToMany(self::class, 'parent_student', 'student_user_id', 'parent_user_id')
+            ->withPivot('relationship')
+            ->withTimestamps();
+    }
+
+    public function schoolAttendances(): HasMany
+    {
+        return $this->hasMany(SchoolAttendance::class, 'student_user_id');
+    }
+
+    public function subjectAttendances(): HasMany
+    {
+        return $this->hasMany(StudentSubjectAttendance::class, 'student_user_id');
+    }
+
+    public function visitations(): HasMany
+    {
+        return $this->hasMany(StudentVisitation::class, 'student_user_id');
+    }
+
+    public function incidents(): HasMany
+    {
+        return $this->hasMany(StudentIncident::class, 'student_user_id');
+    }
+
+    public function permits(): HasMany
+    {
+        return $this->hasMany(StudentPermit::class, 'student_user_id');
+    }
+
+    public function bkRecords(): HasMany
+    {
+        return $this->hasMany(StudentBkRecord::class, 'student_user_id');
+    }
+
+    public function homeroomFollowUps(): HasMany
+    {
+        return $this->hasMany(HomeroomFollowUp::class, 'student_user_id');
     }
 
     public function hasStructuralRole(string $roleType, ?int $academicYearId = null): bool

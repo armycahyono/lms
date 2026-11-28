@@ -36,6 +36,12 @@ class SsoController extends Controller
         $activeYear = AcademicYear::where('is_active', true)->first();
         $user = $syncService->upsertTeacherFromPayload($payload, $activeYear);
 
+        if (! $user || ! $user->is_active || ! in_array($user->role, ['guru', 'admin', 'siswa', 'orang_tua'], true)) {
+            return redirect()->route('login')->withErrors([
+                'username' => 'Akun staf / tenaga kependidikan tidak memiliki akses ke LMS.',
+            ]);
+        }
+
         Auth::login($user);
         $request->session()->regenerate();
 

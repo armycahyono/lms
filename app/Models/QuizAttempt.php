@@ -13,8 +13,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'started_at',
     'submitted_at',
     'answers_json',
+    'question_order_json',
+    'question_scores_json',
     'score',
     'status',
+    'focus_loss_count',
+    'last_saved_at',
 ])]
 class QuizAttempt extends Model
 {
@@ -25,7 +29,10 @@ class QuizAttempt extends Model
         return [
             'started_at' => 'datetime',
             'submitted_at' => 'datetime',
+            'last_saved_at' => 'datetime',
             'answers_json' => 'array',
+            'question_order_json' => 'array',
+            'question_scores_json' => 'array',
             'score' => 'decimal:2',
         ];
     }

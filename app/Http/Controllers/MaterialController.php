@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Course;
 use App\Models\Material;
 use App\Models\MaterialProgress;
+use App\Services\LmsNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -14,7 +15,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class MaterialController extends Controller
 {
-    public function store(Request $request, Course $course): RedirectResponse
+    public function store(Request $request, Course $course, LmsNotificationService $notifications): RedirectResponse
     {
         Gate::authorize('manage', $course);
 
@@ -22,6 +23,7 @@ class MaterialController extends Controller
             'module_id' => ['nullable', 'integer', 'exists:course_modules,id'],
             'title' => ['required', 'string', 'max:255'],
             'type' => ['required', 'in:text,file,video_link'],
+            'category' => ['nullable', 'in:materi,lkpd,buku,presentasi,video'],
             'content' => ['nullable', 'string'],
             'file' => ['nullable', 'file', 'max:20480'],
             'external_url' => ['nullable', 'url', 'max:500'],
@@ -35,17 +37,28 @@ class MaterialController extends Controller
 
         $nextOrder = ((int) $course->materials()->max('sort_order')) + 1;
 
-        Material::create([
+        $material = Material::create([
             'course_id' => $course->id,
             'module_id' => $validated['module_id'] ?? null,
             'title' => $validated['title'],
             'type' => $validated['type'],
+            'category' => $validated['category'] ?? 'materi',
             'content' => $validated['content'] ?? null,
             'file_path' => $filePath,
             'external_url' => $validated['external_url'] ?? null,
             'sort_order' => $nextOrder,
             'is_published' => $request->boolean('is_published', true),
         ]);
+
+        if ($material->is_published) {
+            $notifications->notifyCourseStudents(
+                $course,
+                'material',
+                'Materi Baru: '.$material->title,
+                "Guru menambahkan materi baru di kelas {$course->title}.",
+                ['course_id' => $course->id, 'material_id' => $material->id]
+            );
+        }
 
         return back()->with('status', 'Materi berhasil ditambahkan.');
     }
@@ -57,6 +70,10 @@ class MaterialController extends Controller
 
         $canManage = Gate::allows('manage', $course);
         abort_unless($canManage || $material->is_published, 403);
+
+        if ($request->user()->isSiswa()) {
+            LearningAttendanceController::recordAutoDigital($course, $request->user(), $request->ip());
+        }
 
         $material->load([
             'module',

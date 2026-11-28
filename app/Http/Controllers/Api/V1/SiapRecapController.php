@@ -55,7 +55,9 @@ class SiapRecapController extends Controller
             ->where('status', 'active')
             ->with(['academicYear:id,siap_id,name,semester', 'classroom:id,siap_id,name', 'subject:id,siap_id,code,name'])
             ->withCount([
-                'students as enrolled_students_count' => fn ($q) => $q->where('course_enrollments.status', 'active'),
+                'students as enrolled_students_count' => fn ($q) => $q
+                    ->where('course_enrollments.status', 'active')
+                    ->where('users.is_active', true),
                 'materials as published_materials_count' => fn ($q) => $q->where('is_published', true),
                 'assignments as published_assignments_count' => fn ($q) => $q->where('is_published', true),
             ])

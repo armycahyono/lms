@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -81,5 +82,37 @@ class Course extends Model
     public function discussions(): HasMany
     {
         return $this->hasMany(Discussion::class);
+    }
+
+    public function announcements(): HasMany
+    {
+        return $this->hasMany(Announcement::class)->latest('is_pinned')->latest('id');
+    }
+
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(CourseSchedule::class)->orderBy('day_of_week')->orderBy('start_time');
+    }
+
+    public function learningSessions(): HasMany
+    {
+        return $this->hasMany(LearningSession::class)->latest('session_date')->latest('id');
+    }
+
+    public function cbtExams(): HasMany
+    {
+        return $this->hasMany(CbtExam::class)->latest('id');
+    }
+
+    /**
+     * @param  Builder<Course>  $query
+     * @return Builder<Course>
+     */
+    public function scopeForAcademicYear(Builder $query, ?int $academicYearId): Builder
+    {
+        return $query->when(
+            $academicYearId !== null,
+            fn (Builder $q): Builder => $q->where('courses.academic_year_id', $academicYearId)
+        );
     }
 }

@@ -11,9 +11,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
     'course_id',
+    'assessment_type',
+    'learning_objective_id',
     'module_id',
     'title',
     'instructions',
+    'rubric_notes',
     'attachment_path',
     'due_at',
     'max_score',

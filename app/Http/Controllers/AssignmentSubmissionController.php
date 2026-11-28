@@ -6,6 +6,7 @@ use App\Models\ActivityLog;
 use App\Models\Assignment;
 use App\Models\AssignmentSubmission;
 use App\Models\Course;
+use App\Services\LmsNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -69,7 +70,7 @@ class AssignmentSubmissionController extends Controller
         return Storage::disk('local')->download($submission->file_path);
     }
 
-    public function grade(Request $request, Course $course, Assignment $assignment, AssignmentSubmission $submission): RedirectResponse
+    public function grade(Request $request, Course $course, Assignment $assignment, AssignmentSubmission $submission, LmsNotificationService $notifications): RedirectResponse
     {
         Gate::authorize('manage', $course);
         abort_unless($assignment->course_id === $course->id && $submission->assignment_id === $assignment->id, 404);
@@ -100,6 +101,16 @@ class AssignmentSubmissionController extends Controller
             'ip_address' => $request->ip(),
             'created_at' => now(),
         ]);
+
+        if ($submission->student) {
+            $notifications->notifyUser(
+                $submission->student,
+                'assignment',
+                'Nilai Tugas: '.$assignment->title,
+                "Tugas Anda di kelas {$course->title} telah dinilai dengan skor {$validated['score']} / {$assignment->max_score}.",
+                ['course_id' => $course->id, 'assignment_id' => $assignment->id]
+            );
+        }
 
         return back()->with('status', 'Nilai dan umpan balik siswa berhasil disimpan.');
     }

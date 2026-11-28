@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Schema;
 
 #[Fillable([
     'siap_id',
@@ -31,8 +32,32 @@ class AcademicYear extends Model
         return $this->hasMany(Course::class);
     }
 
-    public function userAssignments(): HasMany
+    public static function active(): ?self
     {
-        return $this->hasMany(UserAssignment::class);
+        if (! Schema::hasTable('academic_years')) {
+            return null;
+        }
+
+        return static::where('is_active', true)->first()
+            ?? static::latest('id')->first();
+    }
+
+    public static function selectedFor(?User $user): ?self
+    {
+        if (! Schema::hasTable('academic_years')) {
+            return null;
+        }
+
+        if ($user && ($user->isGuru() || $user->isAdmin())) {
+            $selectedId = session('selected_academic_year_id');
+            if ($selectedId) {
+                $found = static::find($selectedId);
+                if ($found) {
+                    return $found;
+                }
+            }
+        }
+
+        return static::active();
     }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\CbtScheduleWebhookController;
 use App\Http\Controllers\Api\V1\MobileAuthController;
 use App\Http\Controllers\Api\V1\MobileCourseController;
 use App\Http\Controllers\Api\V1\SiapRecapController;
@@ -16,6 +17,8 @@ Route::get('/user', function (Request $request) {
 Route::prefix('v1')->group(function () {
     Route::post('/webhooks/siap', [SiapWebhookController::class, 'handle'])
         ->middleware(VerifySiapWebhookToken::class);
+    Route::post('/integration/cbt/schedule-sync', [CbtScheduleWebhookController::class, 'sync'])
+        ->middleware('throttle:60,1');
 
     Route::prefix('integration/siap')
         ->middleware(VerifySiapWebhookToken::class)

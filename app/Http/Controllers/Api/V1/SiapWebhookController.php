@@ -15,7 +15,7 @@ class SiapWebhookController extends Controller
             'event' => [
                 'required',
                 'string',
-                'in:student.updated,student.mutated,classroom.updated,assignment.updated,academic_year.activated',
+                'in:student.updated,student.mutated,classroom.updated,assignment.updated,academic_year.activated,attendance.recorded,attendance.updated',
             ],
             'payload' => ['required', 'array'],
         ]);

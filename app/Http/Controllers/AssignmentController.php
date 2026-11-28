@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Assignment;
 use App\Models\Course;
+use App\Services\LmsNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -13,14 +14,17 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AssignmentController extends Controller
 {
-    public function store(Request $request, Course $course): RedirectResponse
+    public function store(Request $request, Course $course, LmsNotificationService $notifications): RedirectResponse
     {
         Gate::authorize('manage', $course);
 
         $validated = $request->validate([
             'module_id' => ['nullable', 'integer', 'exists:course_modules,id'],
+            'assessment_type' => ['nullable', 'in:diagnostik,formatif,sumatif'],
+            'learning_objective_id' => ['nullable', 'integer', 'exists:learning_objectives,id'],
             'title' => ['required', 'string', 'max:255'],
             'instructions' => ['nullable', 'string'],
+            'rubric_notes' => ['nullable', 'string'],
             'attachment' => ['nullable', 'file', 'max:20480'],
             'due_at' => ['nullable', 'date'],
             'max_score' => ['required', 'integer', 'min:1', 'max:1000'],
@@ -33,17 +37,31 @@ class AssignmentController extends Controller
             $attachmentPath = $request->file('attachment')->store("assignments/{$course->id}", 'local');
         }
 
-        Assignment::create([
+        $assignment = Assignment::create([
             'course_id' => $course->id,
+            'assessment_type' => $validated['assessment_type'] ?? 'formatif',
+            'learning_objective_id' => $validated['learning_objective_id'] ?? null,
             'module_id' => $validated['module_id'] ?? null,
             'title' => $validated['title'],
             'instructions' => $validated['instructions'] ?? null,
+            'rubric_notes' => $validated['rubric_notes'] ?? null,
             'attachment_path' => $attachmentPath,
             'due_at' => $validated['due_at'] ?? null,
             'max_score' => $validated['max_score'],
             'allow_late' => $request->boolean('allow_late', true),
             'is_published' => $request->boolean('is_published', true),
         ]);
+
+        if ($assignment->is_published) {
+            $dueInfo = $assignment->due_at ? ' Tenggat: '.$assignment->due_at->format('d M Y H:i') : '';
+            $notifications->notifyCourseStudents(
+                $course,
+                'assignment',
+                'Tugas Baru: '.$assignment->title,
+                "Tugas baru di kelas {$course->title}.{$dueInfo}",
+                ['course_id' => $course->id, 'assignment_id' => $assignment->id]
+            );
+        }
 
         return back()->with('status', 'Tugas berhasil dibuat.');
     }
@@ -93,13 +111,21 @@ class AssignmentController extends Controller
         return back()->with('status', 'Status publikasi tugas diperbarui.');
     }
 
-    public function destroy(Course $course, Assignment $assignment): RedirectResponse
+    public function destroy(Request $request, Course $course, Assignment $assignment): RedirectResponse
     {
         Gate::authorize('manage', $course);
         abort_unless($assignment->course_id === $course->id, 404);
 
+        if ($assignment->submissions()->exists()) {
+            return back()->withErrors(['assignment' => 'Tugas tidak dapat dihapus karena sudah ada siswa yang mengumpulkan.']);
+        }
+
+        if ($assignment->is_published && ! $request->user()->isAdmin()) {
+            return back()->withErrors(['assignment' => 'Tugas yang sudah dirilis/dipublikasikan tidak dapat dihapus oleh guru.']);
+        }
+
         $assignment->delete();
 
-        return back()->with('status', 'Tugas dihapus.');
+        return redirect()->route('courses.show', $course)->with('status', 'Tugas dihapus.');
     }
 }

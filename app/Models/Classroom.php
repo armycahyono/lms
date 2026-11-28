@@ -41,4 +41,23 @@ class Classroom extends Model
     {
         return $this->hasMany(UserAssignment::class);
     }
+
+    public static function parseGradeNumber(?string $gradeLevel, ?string $classroomName = null): int
+    {
+        $raw = strtoupper(trim((string) ($gradeLevel ?: $classroomName)));
+
+        if (preg_match('/\b(12|XII)\b/', $raw)) {
+            return 12;
+        }
+
+        if (preg_match('/\b(11|XI)\b/', $raw)) {
+            return 11;
+        }
+
+        if (preg_match('/\b(10|X)\b/', $raw)) {
+            return 10;
+        }
+
+        return 10;
+    }
 }

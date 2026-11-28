@@ -3,18 +3,14 @@
 @section('title', $material->title)
 
 @section('content')
-<div class="mb-3">
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
     <a href="{{ route('courses.show', $course) }}" class="btn btn-sm btn-outline-secondary">
         <i class="ti ti-arrow-left me-1"></i> Kembali ke {{ $course->title }}
     </a>
-</div>
-
-<div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <div>
-            <div class="text-muted small">{{ $material->module?->title ?? 'Materi' }}</div>
-            <h2 class="card-title mb-0">{{ $material->title }}</h2>
-        </div>
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <a href="{{ route('chat.index', ['course_id' => $course->id, 'ref_type' => 'material', 'ref_id' => $material->id]) }}" class="btn btn-sm btn-outline-primary">
+            <i class="ti ti-message-question me-1"></i> Tanyakan di Chat
+        </a>
         @if(auth()->user()->isSiswa())
             <form action="{{ route('courses.materials.complete', [$course, $material]) }}" method="POST">
                 @csrf
@@ -24,23 +20,36 @@
             </form>
         @endif
     </div>
-    <div class="card-body">
-        @if($material->content)
-            <div class="mb-3">{!! nl2br(e($material->content)) !!}</div>
-        @endif
+</div>
 
-        @if($material->external_url)
-            <div class="mb-3">
-                <a href="{{ $material->external_url }}" target="_blank" rel="noopener" class="btn btn-outline-danger">
-                    <i class="ti ti-brand-youtube me-1"></i> Buka Video Pembelajaran
-                </a>
+<div class="card mb-4">
+    <div class="card-body p-4 p-md-5">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+            <span class="badge bg-blue-lt">{{ $material->module?->title ?? 'Materi Pembelajaran' }}</span>
+            <span class="badge bg-secondary-lt text-uppercase">{{ $material->type }}</span>
+        </div>
+        <h1 class="h2 mb-4">{{ $material->title }}</h1>
+
+        @if($material->content)
+            <div class="mb-4" style="max-width: 72ch; line-height: 1.75; font-size: 1rem; color: #1e293b;">
+                {!! nl2br(e($material->content)) !!}
             </div>
         @endif
 
-        @if($material->file_path)
-            <a href="{{ route('courses.materials.download', [$course, $material]) }}" class="btn btn-primary">
-                <i class="ti ti-download me-1"></i> Unduh File Materi
-            </a>
+        @if($material->external_url || $material->file_path)
+            <div class="bg-light rounded p-3 d-flex flex-wrap gap-2 align-items-center">
+                @if($material->external_url)
+                    <a href="{{ $material->external_url }}" target="_blank" rel="noopener" class="btn btn-outline-danger">
+                        <i class="ti ti-brand-youtube me-1"></i> Buka Video Pembelajaran
+                    </a>
+                @endif
+
+                @if($material->file_path)
+                    <a href="{{ route('courses.materials.download', [$course, $material]) }}" class="btn btn-primary">
+                        <i class="ti ti-download me-1"></i> Unduh File Materi
+                    </a>
+                @endif
+            </div>
         @endif
     </div>
 </div>
@@ -56,7 +65,7 @@
         </form>
 
         @forelse($material->discussions as $discussion)
-            <div class="border rounded p-3 mb-2">
+            <div class="border rounded p-3 mb-2 bg-light-subtle">
                 <div class="d-flex justify-content-between">
                     <strong>{{ $discussion->user?->name }}</strong>
                     <span class="text-muted small">{{ $discussion->created_at?->diffForHumans() }}</span>
@@ -64,7 +73,7 @@
                 <p class="mb-0 mt-1">{{ $discussion->body }}</p>
             </div>
         @empty
-            <p class="text-muted small mb-0">Belum ada komentar pada materi ini.</p>
+            <p class="text-muted small text-center py-3 mb-0">Belum ada komentar pada materi ini.</p>
         @endforelse
     </div>
 </div>

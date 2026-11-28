@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'course_id',
     'title',
     'type',
+    'category',
     'content',
     'file_path',
     'external_url',
