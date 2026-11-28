@@ -2,9 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\AcademicYear;
+use App\Models\Classroom;
+use App\Models\ClassroomStudent;
 use App\Models\LmsNotification;
 use App\Models\User;
+use App\Models\UserAssignment;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class NavigationAndLayoutTest extends TestCase
@@ -64,12 +69,13 @@ class NavigationAndLayoutTest extends TestCase
         $this->assertNotNull($notification->fresh()->read_at);
     }
 
-    public function test_login_page_displays_siap_sso_button(): void
+    public function test_login_page_displays_direct_login_form(): void
     {
         $this->get(route('login'))
             ->assertOk()
-            ->assertSee('Masuk Sebagai Murid')
-            ->assertSee('Masuk Sebagai Guru')
+            ->assertSee('Username / NISN')
+            ->assertSee('Kata Sandi')
+            ->assertSee('Masuk ke LMS')
             ->assertSee('Asah Keterampilan – Teguhkan Keimanan – Raih Kesuksesan');
     }
 
@@ -128,5 +134,113 @@ class NavigationAndLayoutTest extends TestCase
         $this->actingAs($student)
             ->get(route('dashboard'))
             ->assertOk();
+    }
+
+    public function test_teacher_can_login_directly_and_admin_can_reset_teacher_password(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $teacher = User::factory()->create([
+            'role' => 'guru',
+            'username' => 'guru.test',
+            'password' => bcrypt('custom-secret'),
+            'must_change_password' => false,
+            'is_active' => true,
+        ]);
+
+        $this->post(route('login'), [
+            'username' => 'guru.test',
+            'password' => 'custom-secret',
+        ])->assertRedirect(route('dashboard'));
+
+        $this->post(route('logout'));
+
+        $this->actingAs($admin)
+            ->post(route('admin.teachers.reset-password', $teacher))
+            ->assertRedirect();
+
+        $teacher->refresh();
+        $this->assertTrue(Hash::check('password', $teacher->password));
+        $this->assertTrue((bool) $teacher->must_change_password);
+    }
+
+    public function test_admin_and_homeroom_teacher_can_reset_student_and_parent_passwords_while_other_teacher_is_forbidden(): void
+    {
+        $year = AcademicYear::create([
+            'siap_id' => 99,
+            'name' => '2026/2027',
+            'semester' => 'ganjil',
+            'is_active' => true,
+        ]);
+
+        $classroom = Classroom::create([
+            'siap_id' => 990,
+            'academic_year_id' => $year->id,
+            'name' => 'XI TKJ 2',
+            'grade_level' => 11,
+        ]);
+
+        $admin = User::factory()->create(['role' => 'admin']);
+        $waliKelas = User::factory()->create(['role' => 'guru']);
+        $otherTeacher = User::factory()->create(['role' => 'guru']);
+
+        UserAssignment::create([
+            'user_id' => $waliKelas->id,
+            'academic_year_id' => $year->id,
+            'classroom_id' => $classroom->id,
+            'role_type' => 'wali_kelas',
+        ]);
+
+        $student = User::factory()->create([
+            'role' => 'siswa',
+            'username' => '1234567890',
+            'password' => bcrypt('custom-student-pass'),
+            'must_change_password' => false,
+        ]);
+
+        ClassroomStudent::create([
+            'classroom_id' => $classroom->id,
+            'student_user_id' => $student->id,
+            'status' => 'active',
+        ]);
+
+        $parent = User::factory()->create([
+            'role' => 'orang_tua',
+            'username' => 'ortu.1234567890',
+            'password' => bcrypt('custom-parent-pass'),
+            'must_change_password' => false,
+        ]);
+
+        $student->parents()->attach($parent->id, ['relationship' => 'ayah']);
+
+        // Non-wali-kelas teacher is forbidden
+        $this->actingAs($otherTeacher)
+            ->post(route('admin.students.reset-password', $student))
+            ->assertForbidden();
+
+        $this->actingAs($otherTeacher)
+            ->post(route('admin.students.reset-parent-password', $student))
+            ->assertForbidden();
+
+        // Wali kelas can reset student and parent password to NISN
+        $this->actingAs($waliKelas)
+            ->post(route('admin.students.reset-password', $student))
+            ->assertRedirect();
+
+        $this->actingAs($waliKelas)
+            ->post(route('admin.students.reset-parent-password', $student))
+            ->assertRedirect();
+
+        $this->assertTrue(Hash::check('1234567890', $student->fresh()->password));
+        $this->assertTrue((bool) $student->fresh()->must_change_password);
+        $this->assertTrue(Hash::check('1234567890', $parent->fresh()->password));
+        $this->assertTrue((bool) $parent->fresh()->must_change_password);
+
+        // Admin can also reset
+        $parent->update(['password' => bcrypt('another-pass'), 'must_change_password' => false]);
+        $this->actingAs($admin)
+            ->post(route('admin.students.reset-parent-password', $student))
+            ->assertRedirect();
+
+        $this->assertTrue(Hash::check('1234567890', $parent->fresh()->password));
     }
 }

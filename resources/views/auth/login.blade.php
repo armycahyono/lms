@@ -38,10 +38,6 @@
 @endpush
 
 @section('content')
-@php
-    $siapSsoUrl = config('services.siap.sso_url') ?: rtrim((string) config('services.siap.url'), '/');
-@endphp
-
 <div class="row justify-content-center align-items-center py-4 py-md-5">
     <div class="col-sm-10 col-md-7 col-lg-5 col-xl-4">
         <div class="card overflow-hidden">
@@ -53,31 +49,18 @@
                     <p class="text-muted small mb-0">SMK PGRI Kras</p>
                 </div>
 
-                <div class="login-role-switch mb-4" role="tablist" aria-label="Pilih Peran Masuk">
-                    <button type="button" class="login-role-btn active" data-role-target="panel-student" role="tab" aria-selected="true">
-                        <i class="ti ti-school"></i>
-                        <span>Murid</span>
-                    </button>
-                    <button type="button" class="login-role-btn" data-role-target="panel-teacher" role="tab" aria-selected="false">
-                        <i class="ti ti-chalkboard"></i>
-                        <span>Guru</span>
-                    </button>
-                </div>
-
                 @if ($errors->any())
                     <div class="alert alert-danger py-2 small">
                         {{ $errors->first() }}
                     </div>
                 @endif
 
-                {{-- Panel Murid --}}
-                <div id="panel-student" class="login-role-panel">
-                    <form action="{{ route('login') }}" method="POST" autocomplete="off">
-                        @csrf
-                        <div class="mb-3">
-                            <label class="form-label" for="username">NISN / Username</label>
-                            <input id="username" type="text" name="username" value="{{ old('username') }}" class="form-control" placeholder="Masukkan NISN atau username" required autofocus>
-                        </div>
+                <form action="{{ route('login') }}" method="POST" autocomplete="off">
+                    @csrf
+                    <div class="mb-3">
+                        <label class="form-label" for="username">Username / NISN</label>
+                        <input id="username" type="text" name="username" value="{{ old('username') }}" class="form-control" placeholder="Masukkan username atau NISN" required autofocus>
+                    </div>
                     <div class="mb-3">
                         <label class="form-label" for="password">Kata Sandi</label>
                         <div class="input-group input-group-flat">
@@ -89,32 +72,16 @@
                             </span>
                         </div>
                     </div>
-                        <div class="mb-3">
-                            <label class="form-check">
-                                <input type="checkbox" name="remember" class="form-check-input">
-                                <span class="form-check-label small">Ingat saya di perangkat ini</span>
-                            </label>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100 py-2">
-                            <i class="ti ti-login me-1"></i> Masuk Sebagai Murid
-                        </button>
-                    </form>
-                </div>
-
-                {{-- Panel Guru --}}
-                <div id="panel-teacher" class="login-role-panel d-none text-center py-2">
-                    <div class="avatar avatar-xl bg-blue-lt text-primary rounded-circle mx-auto mb-3">
-                        <i class="ti ti-shield-lock fs-1"></i>
+                    <div class="mb-3">
+                        <label class="form-check">
+                            <input type="checkbox" name="remember" class="form-check-input">
+                            <span class="form-check-label small">Ingat saya di perangkat ini</span>
+                        </label>
                     </div>
-                    <h3 class="mb-1">Portal Guru &amp; Pegawai</h3>
-                    <p class="text-muted small mb-4">
-                        Gunakan akun SIAP Anda untuk masuk dan mengelola kelas digital dengan aman.
-                    </p>
-                    <a href="{{ $siapSsoUrl }}" class="btn btn-primary w-100 py-2 d-inline-flex align-items-center justify-content-center gap-2">
-                        <i class="ti ti-arrow-right"></i>
-                        <span>Masuk Sebagai Guru</span>
-                    </a>
-                </div>
+                    <button type="submit" class="btn btn-primary w-100 py-2">
+                        <i class="ti ti-login me-1"></i> Masuk ke LMS
+                    </button>
+                </form>
 
                 <hr class="my-4">
                 <p class="text-muted text-center small fw-medium mb-0">
@@ -140,23 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
             input.type = isPassword ? 'text' : 'password';
             icon.classList.toggle('ti-eye', !isPassword);
             icon.classList.toggle('ti-eye-off', isPassword);
-        });
-    });
-
-    const roleButtons = document.querySelectorAll('.login-role-btn');
-    const rolePanels = document.querySelectorAll('.login-role-panel');
-
-    roleButtons.forEach((btn) => {
-        btn.addEventListener('click', () => {
-            roleButtons.forEach((b) => {
-                b.classList.remove('active');
-                b.setAttribute('aria-selected', 'false');
-            });
-            btn.classList.add('active');
-            btn.setAttribute('aria-selected', 'true');
-
-            rolePanels.forEach((p) => p.classList.add('d-none'));
-            document.getElementById(btn.dataset.roleTarget)?.classList.remove('d-none');
         });
     });
 });

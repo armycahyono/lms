@@ -428,7 +428,7 @@ class SiapSyncService
                 'username' => $item['username'],
                 'name' => $item['name'],
                 'email' => $item['email'] ?? null,
-                'password' => Hash::make(Str::random(32)),
+                'password' => Hash::make('password'),
                 'role' => $item['base_role'] ?? 'guru',
                 'must_change_password' => false,
                 'is_active' => (bool) ($item['is_active'] ?? true),

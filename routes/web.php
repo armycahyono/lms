@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\SiapSyncController;
 use App\Http\Controllers\Admin\StudentPasswordController;
 use App\Http\Controllers\Admin\SystemSettingController;
+use App\Http\Controllers\Admin\TeacherPasswordController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AssignmentSubmissionController;
@@ -158,6 +159,10 @@ Route::middleware('auth')->group(function () {
 
         Route::post('/admin/students/{student}/reset-password', [StudentPasswordController::class, 'reset'])
             ->name('admin.students.reset-password');
+        Route::post('/admin/students/{student}/reset-parent-password', [StudentPasswordController::class, 'resetParent'])
+            ->name('admin.students.reset-parent-password');
+        Route::post('/admin/teachers/{teacher}/reset-password', [TeacherPasswordController::class, 'reset'])
+            ->name('admin.teachers.reset-password');
         Route::post('/admin/siap/sync', [SiapSyncController::class, 'sync'])
             ->name('admin.siap.sync');
         Route::get('/admin/pengaturan', [SystemSettingController::class, 'index'])
@@ -168,6 +173,8 @@ Route::middleware('auth')->group(function () {
             ->name('admin.settings.checkpoints.toggle');
         Route::get('/admin/backup', [BackupController::class, 'index'])->name('admin.backups.index');
         Route::post('/admin/backup', [BackupController::class, 'store'])->name('admin.backups.store');
+        Route::post('/admin/backup/pulihkan-upload', [BackupController::class, 'restoreUpload'])->name('admin.backups.restore-upload');
+        Route::post('/admin/backup/{filename}/pulihkan', [BackupController::class, 'restore'])->name('admin.backups.restore');
         Route::get('/admin/backup/{filename}/unduh', [BackupController::class, 'download'])->name('admin.backups.download');
         Route::delete('/admin/backup/{filename}', [BackupController::class, 'destroy'])->name('admin.backups.destroy');
 

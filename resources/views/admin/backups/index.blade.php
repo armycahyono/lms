@@ -44,6 +44,28 @@
     </div>
 </div>
 
+<div class="card mb-4 border-warning">
+    <div class="card-header">
+        <h3 class="card-title mb-0">Pulihkan dari File Backup (.sql / .sql.gz)</h3>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ route('admin.backups.restore-upload') }}" enctype="multipart/form-data" class="row g-2 align-items-center" onsubmit="return confirm('PERINGATAN: Pemulihan akan menimpa seluruh data database LMS saat ini. Pastikan Anda sudah yakin. Lanjutkan?')">
+            @csrf
+            <div class="col-md-8">
+                <input type="file" name="backup_file" accept=".sql,.gz,.sql.gz,.sqlite.gz" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-warning w-100">
+                    <i class="ti ti-database-import me-1"></i> Unggah &amp; Pulihkan Database
+                </button>
+            </div>
+        </form>
+        <div class="text-muted small mt-2">
+            Pemulihan akan menggantikan isi database saat ini dengan isi dari file backup yang dipilih.
+        </div>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-header">
         <h3 class="card-title">Daftar File Backup ({{ $backups->count() }})</h3>
@@ -72,6 +94,14 @@
                         <td class="text-muted small">{{ $backup['created_at'] }}</td>
                         <td class="text-end">
                             <div class="d-inline-flex gap-2">
+                                @if($backup['type'] === 'Database')
+                                    <form method="POST" action="{{ route('admin.backups.restore', $backup['name']) }}" onsubmit="return confirm('PERINGATAN: Memulihkan {{ $backup['name'] }} akan menimpa seluruh data database saat ini. Lanjutkan?')">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-outline-warning">
+                                            <i class="ti ti-history me-1"></i> Pulihkan
+                                        </button>
+                                    </form>
+                                @endif
                                 <a href="{{ route('admin.backups.download', $backup['name']) }}" class="btn btn-sm btn-outline-primary">
                                     <i class="ti ti-download me-1"></i> Unduh
                                 </a>

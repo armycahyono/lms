@@ -82,6 +82,15 @@
                             <i class="ti ti-phone text-primary"></i> {{ $teacher->profile->phone }}
                         </a>
                     @endif
+
+                    @if(auth()->user()->isAdmin())
+                        <form action="{{ route('admin.teachers.reset-password', $teacher) }}" method="POST" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Reset kata sandi {{ $teacher->name }} ke password default?')">
+                                <i class="ti ti-key me-1"></i> Reset Password
+                            </button>
+                        </form>
+                    @endif
                 </div>
             </div>
         @empty
@@ -128,6 +137,8 @@
                     ->filter()
                     ->unique()
                     ->values();
+                $canResetStudent = auth()->user()->isAdmin()
+                    || ($studentClassroom && ($homeroomClassroomIds ?? collect())->contains($studentClassroom->id));
             @endphp
             <div class="lms-row-card d-flex flex-wrap justify-content-between align-items-center gap-3">
                 <div class="d-flex align-items-center gap-3 min-w-0">
@@ -182,6 +193,23 @@
                         @endif
                     @else
                         <span class="lms-metric-chip text-muted">Belum ada no. telepon</span>
+                    @endif
+
+                    @if($canResetStudent)
+                        <form action="{{ route('admin.students.reset-password', $student) }}" method="POST" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Reset kata sandi siswa {{ $student->name }} ke NISN?')">
+                                <i class="ti ti-key me-1"></i> Reset Siswa
+                            </button>
+                        </form>
+                        @if($student->parents->isNotEmpty())
+                            <form action="{{ route('admin.students.reset-parent-password', $student) }}" method="POST" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-sm btn-outline-warning" onclick="return confirm('Reset kata sandi orang tua {{ $student->name }} ke NISN?')">
+                                    <i class="ti ti-key me-1"></i> Reset Ortu
+                                </button>
+                            </form>
+                        @endif
                     @endif
                 </div>
             </div>

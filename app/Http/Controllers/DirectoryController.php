@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AcademicYear;
 use App\Models\Classroom;
 use App\Models\User;
+use App\Models\UserAssignment;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -66,6 +67,16 @@ class DirectoryController extends Controller
             ->orderBy('name')
             ->get();
 
+        $homeroomClassroomIds = $user->isGuru()
+            ? UserAssignment::query()
+                ->where('user_id', $user->id)
+                ->where('role_type', 'wali_kelas')
+                ->when($activeYear, fn ($q) => $q->where('academic_year_id', $activeYear->id))
+                ->pluck('classroom_id')
+                ->filter()
+                ->values()
+            : collect();
+
         return view('directory.index', [
             'activeYear' => $activeYear,
             'tab' => $tab,
@@ -74,6 +85,7 @@ class DirectoryController extends Controller
             'teachers' => $teachers,
             'students' => $students,
             'classrooms' => $classrooms,
+            'homeroomClassroomIds' => $homeroomClassroomIds,
         ]);
     }
 }
