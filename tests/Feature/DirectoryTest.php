@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AcademicYear;
 use App\Models\Classroom;
+use App\Models\ClassroomStudent;
 use App\Models\User;
 use App\Models\UserAssignment;
 use App\Models\UserProfile;
@@ -39,6 +40,11 @@ class DirectoryTest extends TestCase
         ]);
 
         $student = User::factory()->create(['role' => 'siswa', 'name' => 'Ani Siswa', 'must_change_password' => false]);
+        ClassroomStudent::create([
+            'classroom_id' => $classroom->id,
+            'student_user_id' => $student->id,
+            'status' => 'active',
+        ]);
         UserProfile::create([
             'user_id' => $student->id,
             'phone' => '081234567890',
